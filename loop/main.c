@@ -20,12 +20,16 @@ extern Int16 AIC3204_rset( Uint16 regnum, Uint16 regval);
  *                                                                          *
  * ------------------------------------------------------------------------ */
 void main( void )
+
 {
-    int r = 0, rmax, rmin, delta0, deltamin, deltamax;
-    // Definiçao do Delta = 4 * Fo
-    delta0 = 4*4000;                             //Variavel Delta a ser incrementada
-    deltamin = 4*2000;
-    deltamax = 4*6000;
+    Int16 r = 0,s, rmax, rmin, delta0, deltamin, deltamax,gain = 204800,t,
+    look_sen[32]= {0,3212,6393 ,9512 ,12539,15446,18204,20787,23170,25329,27245,28898,30273,31356,32137,32609,
+    32767,32609,32137,31356,30273,28898,27245,25329,23170,20787,18204,15446,12539, 9512,6393,3212};
+    // Definiçao do Delta = 4,096 * Fo
+    delta0 = 16384;                             //Variavel Delta a ser incrementada
+    deltamin = 8192;                            //4.096*2000
+    deltamax = 24576;                           //4.096*6000
+
     /* Initialize BSL */
     USBSTK5515_init( );
 
@@ -92,7 +96,7 @@ void main( void )
 
 
        Int16 DataInLeft, DataInRight, DataOutLeft, DataOutRight;
-
+       Int32 SDD;
        while(1) {
                 	/* Read Digital audio */
                 	while((Rcv & I2S0_IR) == 0);  // Wait for interrupt pending flag
@@ -108,11 +112,17 @@ void main( void )
 //--------------------------------------------------------------------------------------------------------------------
 //Soma dos sinais
 r = r + delta0;
-rmin = r + deltamin;
-rmax = r +deltamax;
+rmin = rmin + deltamin;
+rmax = rmax +deltamax;
 
-DataOutLeft = rmin;       // loop left channel samples
-DataOutRight = r;         // loop right channel samples
+s = r & 31744;           //0b1111110000000000;
+s =s >> 10;
+t = look_sen[s];
+SDD = gain;
+SDD = SDD>> 15;
+        // (gain * look_sen[s]) >> 15
+DataOutLeft = SDD;       // loop left channel samples
+DataOutRight = look_sen[s];         // loop right channel samples
 //--------------------------------------------------------------------------------------------------------------------
 // Your program here!!!
 //--------------------------------------------------------------------------------------------------------------------
