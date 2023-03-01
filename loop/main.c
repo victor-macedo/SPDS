@@ -22,10 +22,10 @@ extern Int16 AIC3204_rset( Uint16 regnum, Uint16 regval);
 void main( void )
 
 {
-    Int16 r = 0,s, rmax, rmin, delta0, deltamin, deltamax,gain = 204800,t,
+    Int16 r = 0,s, rmax, rmin,delta, delta0, deltamin, deltamax,gain = 32767,SDD,t,k = 8192,
     look_sen[32]= {0,3212,6393 ,9512 ,12539,15446,18204,20787,23170,25329,27245,28898,30273,31356,32137,32609,
     32767,32609,32137,31356,30273,28898,27245,25329,23170,20787,18204,15446,12539, 9512,6393,3212};
-    // DefiniÃ§ao do Delta = 4,096 * Fo
+    // Definiçao do Delta = 4,096 * Fo
     delta0 = 16384;                             //Variavel Delta a ser incrementada
     deltamin = 8192;                            //4.096*2000
     deltamax = 24576;                           //4.096*6000
@@ -96,7 +96,6 @@ void main( void )
 
 
        Int16 DataInLeft, DataInRight, DataOutLeft, DataOutRight;
-       Int32 SDD;
        while(1) {
                 	/* Read Digital audio */
                 	while((Rcv & I2S0_IR) == 0);  // Wait for interrupt pending flag
@@ -110,17 +109,24 @@ void main( void )
 //--------------------------------------------------------------------------------------------------------------------
  // Your program here!!!
 //--------------------------------------------------------------------------------------------------------------------
+delta = delta0 + ((((long)k * DataInLeft)<<1)>>16);
 //Soma dos sinais
-r = r + delta0;
+r = r + delta;
 rmin = rmin + deltamin;
 rmax = rmax +deltamax;
 
-s = r >> 11;           //0b1111110000000000;
+s = r & 31744;           //0b1111110000000000;
+s =s >> 10;
+
+
 t = look_sen[s];
-SDD = (t * gain) >> 15;
-        // (gain * look_sen[s]) >> 15
+if(r<0){
+    t = -t;
+}
+
+SDD =(((long)gain * t)<<1) >> 16;
 DataOutLeft = SDD;       // loop left channel samples
-DataOutRight = t;         // loop right channel samples
+DataOutRight = r;         // loop right channel samples
 //--------------------------------------------------------------------------------------------------------------------
 // Your program here!!!
 //--------------------------------------------------------------------------------------------------------------------
