@@ -22,9 +22,9 @@ extern Int16 AIC3204_rset( Uint16 regnum, Uint16 regval);
 void main( void )
 
 {
-    Int16 r = 0,s, rmax, rmin,delta, delta0, deltamin, deltamax,gain = 32767,SDD,t,k = 0,y1=0,y2,f,
-    look_sen[33]= {0,3212,6393 ,9512 ,12539,15446,18204,20787,23170,25329,27245,28898,30273,31356,32137,32609,
-    32767,32609,32137,31356,30273,28898,27245,25329,23170,20787,18204,15446,12539, 9512,6393,3212,0};
+    Int16 r = 0,s, rmax, rmin,delta, delta0, deltamin, deltamax,gain = 32767,SDD,t,k = 8192,
+    look_sen[32]= {0,3212,6393 ,9512 ,12539,15446,18204,20787,23170,25329,27245,28898,30273,31356,32137,32609,
+    32767,32609,32137,31356,30273,28898,27245,25329,23170,20787,18204,15446,12539, 9512,6393,3212};
     // Definiçao do Delta = 4,096 * Fo
     delta0 = 16384;                             //Variavel Delta a ser incrementada
     deltamin = 8192;                            //4.096*2000
@@ -76,7 +76,7 @@ void main( void )
        /* ADC ROUTING and Power Up */
        AIC3204_rset( 0, 1 );          // Select page 1
        AIC3204_rset( 0x34, 0x30 );    // STEREO 1 Jack
-   		                           // IN2_L to LADC_P through 40 kohm
+                                   // IN2_L to LADC_P through 40 kohm
        AIC3204_rset( 0x37, 0x30 );    // IN2_R to RADC_P through 40 kohmm
        AIC3204_rset( 0x36, 3 );       // CM_1 (common mode) to LADC_M through 40 kohm
        AIC3204_rset( 0x39, 0xc0 );    // CM_1 (common mode) to RADC_M through 40 kohm
@@ -97,14 +97,14 @@ void main( void )
 
        Int16 DataInLeft, DataInRight, DataOutLeft, DataOutRight;
        while(1) {
-                	/* Read Digital audio */
-                	while((Rcv & I2S0_IR) == 0);  // Wait for interrupt pending flag
+                    /* Read Digital audio */
+                    while((Rcv & I2S0_IR) == 0);  // Wait for interrupt pending flag
                     DataInRight = I2S0_W0_MSW_R;  // 16 bit right channel received audio data
                     DataInLeft = I2S0_W1_MSW_R;  // 16 bit left channel received audio data
-    				/* Write Digital audio */
-          	        while((Xmit & I2S0_IR) == 0);  // Wait for interrupt pending flag
+                    /* Write Digital audio */
+                    while((Xmit & I2S0_IR) == 0);  // Wait for interrupt pending flag
                     I2S0_W0_MSW_W = DataOutRight;  // 16 bit right channel transmit audio data
-    				I2S0_W1_MSW_W = DataOutLeft;  // 16 bit left channel transmit audio data
+                    I2S0_W1_MSW_W = DataOutLeft;  // 16 bit left channel transmit audio data
 
 //--------------------------------------------------------------------------------------------------------------------
  // Your program here!!!
@@ -120,18 +120,13 @@ s =s >> 10;
 
 
 t = look_sen[s];
-y2 = look_sen[s+1];
 if(r<0){
     t = -t;
-    y2= -y2;
 }
-y1 = t;
-f = (r & 1023) << 5;           //0b0000 0011 1111 1111;
-DataOutLeft = y1+((((y2-y1)*(long)f)<<1)>>16);
 
 SDD =(((long)gain * t)<<1) >> 16;
-//DataOutLeft = SDD;       // loop left channel samples
-DataOutRight = y1;         // loop right channel samples
+DataOutLeft = SDD;       // loop left channel samples
+DataOutRight = r;         // loop right channel samples
 //--------------------------------------------------------------------------------------------------------------------
 // Your program here!!!
 //--------------------------------------------------------------------------------------------------------------------
@@ -139,14 +134,6 @@ DataOutRight = y1;         // loop right channel samples
   }
 
  } // main()
-
-
-
-
-
-
-
-
 
 
 
