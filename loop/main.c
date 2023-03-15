@@ -1,8 +1,3 @@
-/*
- *  Copyright 2010 by Spectrum Digital Incorporated.
- *  All rights reserved. Property of Spectrum Digital Incorporated.
- */
-
 #define AIC3204_I2C_ADDR 0x18
 #include "usbstk5515.h"
 #include "usbstk5515_gpio.h"
@@ -21,10 +16,12 @@ extern Int16 AIC3204_rset( Uint16 regnum, Uint16 regval);
  * ------------------------------------------------------------------------ */
 void main( void )
 
+
 {
-    Int16 r = 0,s, rmax, rmin,delta, delta0, deltamin, deltamax,gain = 32767,SDD,t,k = 8192,
-    look_sen[32]= {0,3212,6393 ,9512 ,12539,15446,18204,20787,23170,25329,27245,28898,30273,31356,32137,32609,
-    32767,32609,32137,31356,30273,28898,27245,25329,23170,20787,18204,15446,12539, 9512,6393,3212};
+    Int16 r = 0,s, rmax, rmin,delta, delta0, deltamin, deltamax,gain = 32767,SDD,t,k = -8192,y1=0,y2,f,phase, alfa = 31523,//alfa = 0.962
+    look_sen[33]= {0,3212,6393 ,9512 ,12539,15446,18204,20787,23170,25329,27245,28898,30273,31356,32137,32609,
+    32767,32609,32137,31356,30273,28898,27245,25329,23170,20787,18204,15446,12539, 9512,6393,3212,0},
+    NCO, e;
     // Definiçao do Delta = 4,096 * Fo
     delta0 = 16384;                             //Variavel Delta a ser incrementada
     deltamin = 8192;                            //4.096*2000
@@ -109,7 +106,11 @@ void main( void )
 //--------------------------------------------------------------------------------------------------------------------
  // Your program here!!!
 //--------------------------------------------------------------------------------------------------------------------
-delta = delta0 + ((((long)k * DataInLeft)<<1)>>16);
+//
+//            NCO
+//
+//-------------------------------------------------------------------------------------
+delta = delta0 + ((((long)k * e)<<1)>>16);
 //Soma dos sinais
 r = r + delta;
 rmin = rmin + deltamin;
@@ -120,21 +121,34 @@ s =s >> 10;
 
 
 t = look_sen[s];
+y2 = look_sen[s+1];
 if(r<0){
     t = -t;
+    y2= -y2;
 }
+y1 = t;
+f = (r & 1023) << 5;           //0b0000 0011 1111 1111;
+DataOutLeft = y1+((((y2-y1)*(long)f)<<1)>>16);
+NCO = (((long)gain * t)<<1) >> 16;//Calcula a nova saida do NCO
 
-SDD =(((long)gain * t)<<1) >> 16;
-DataOutLeft = SDD;       // loop left channel samples
-DataOutRight = r;         // loop right channel samples
+// Phase detector
+//a simple multiplier which multiplies the sample of the input signal by the sample generated on the previously developed NCO
+//---------------------------------------------------------
+phase = ((((long)DataInLeft * NCO)<< 1)>>16);
 //--------------------------------------------------------------------------------------------------------------------
-// Your program here!!!
+//------------------------------------------------------------
+//
+// Loop Filter
+//
+//---------------------------------------------------------
+e = (((long)alfa*e + (32767-alfa)*(long)phase)<<1)>>16;//dar fix
+//---------------------------------------------------------
+//------------------------------------------------------------
+//
+// Saida
 //--------------------------------------------------------------------------------------------------------------------
-
+DataOutLeft = NCO ;       // loop left channel samples
+DataOutRight = e;         // loop right channel samples
   }
 
  } // main()
-
-
-
-
