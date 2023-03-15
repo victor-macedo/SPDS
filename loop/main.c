@@ -18,11 +18,11 @@ void main( void )
 
 
 {
-    Int16 r = 0,s, rmax, rmin,delta, delta0, deltamin, deltamax,gain = 32767,SDD,t,k = -8192,y1=0,y2,f,phase, alfa = 31523,//alfa = 0.962
+    Int16 r = 0,s, rmax, rmin,delta, delta0, deltamin, deltamax,gain = 32767,SDD,t,k = -8192,y2,inter,f,phase, alfa = 31523,//alfa = 0.962
     look_sen[33]= {0,3212,6393 ,9512 ,12539,15446,18204,20787,23170,25329,27245,28898,30273,31356,32137,32609,
     32767,32609,32137,31356,30273,28898,27245,25329,23170,20787,18204,15446,12539, 9512,6393,3212,0},
     NCO, e;
-    // Definiçao do Delta = 4,096 * Fo
+    // Definicao do Delta = 4,096 * Fo
     delta0 = 16384;                             //Variavel Delta a ser incrementada
     deltamin = 8192;                            //4.096*2000
     deltamax = 24576;                           //4.096*6000
@@ -113,23 +113,22 @@ void main( void )
 delta = delta0 + ((((long)k * e)<<1)>>16);
 //Soma dos sinais
 r = r + delta;
-rmin = rmin + deltamin;
-rmax = rmax +deltamax;
+//rmin = rmin + deltamin;  Nao necessario no projeto?
+//rmax = rmax +deltamax;    Nao necessario no projeto?
 
-s = r & 31744;           //0b1111110000000000;
-s =s >> 10;
+s = r & 31744;           //0b1111110000000000
+s =s >> 10;              //Utiliza os 5 MSB + bit de sinal e converte para Q15
 
 
-t = look_sen[s];
+t = look_sen[s];        //Converte o valor da rampa em uma senoide
 y2 = look_sen[s+1];
-if(r<0){
+if(r<0){                 // if para inverter o valor do sen
     t = -t;
     y2= -y2;
 }
-y1 = t;
-f = (r & 1023) << 5;           //0b0000 0011 1111 1111;
-DataOutLeft = y1+((((y2-y1)*(long)f)<<1)>>16);
-NCO = (((long)gain * t)<<1) >> 16;//Calcula a nova saida do NCO
+f = (r & 1023) << 5;           //0b0000 0011 1111 1111 Utiliza os outros bits da rampa para interpolacao
+Inter = t+((((y2-t)*(long)f)<<1)>>16); //Interpolacao do seno
+NCO = (((long)gain * inter)<<1) >> 16;//Calcula a nova saida do NCO
 
 // Phase detector
 //a simple multiplier which multiplies the sample of the input signal by the sample generated on the previously developed NCO
