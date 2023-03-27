@@ -21,7 +21,7 @@ void main( void )
     Int16 r = 0,s, rmax, rmin,delta, delta0, deltamin, deltamax,gain = 32767,SDD,t,k = -27853,y2,inter,f,phase, alfa = 31523,//alfa = 0.996
     look_sen[33]= {0,3212,6393 ,9512 ,12539,15446,18204,20787,23170,25329,27245,28898,30273,31356,32137,32609,
     32767,32609,32137,31356,30273,28898,27245,25329,23170,20787,18204,15446,12539, 9512,6393,3212,0},
-    NCO, e, xband[3] = {0,0,0}, yband[3] = {0,0,0};
+    NCO, e, xband[3] = {0,0,0}, yband[3] = {0,0,0},Kf,ef,a1;
     // Definicao do Delta = 4,096 * Fo
     delta0 = 16384;                             //Variavel Delta a ser incrementada
     deltamin = 8192;                            //4.096*2000
@@ -141,12 +141,18 @@ phase = ((((long)DataInLeft * NCO)<< 1)>>16);
 //
 //---------------------------------------------------------
 e = (((long)alfa*e + (32767-alfa)*(long)phase)<<1)>>16;//dar fix
+
+//-------------------------------------------------------
+//      Frequency Control
+//-------------------------------------------------------
+Kf = (((-25736*(long)16384)) << 1 ) >> 16; //pi/2*ef resultado final em Q14
+
 //---------------------------------------------------------
 //      Band Pass Filter
 //------------------------------------------------------------
 xband[0] = DataInLeft;
-
-yband[0] = (((((long)30310*yband[1])<< 1) -(long)27986*yband[2]+(long)2391*xband[0]-(long)2391*xband[2]) << 1) >> 16;
+a1 = ((2*(long)Kf*(32767-2555)) << 1 ) >> 16; //a1 = 2*Kf*(1-Kb) Valor varia entre -1.3 e 1.3  Q14
+yband[0] = (((((long)a1*yband[1])<< 1) -(long)27986*yband[2]+(long)2391*xband[0]-(long)2391*xband[2]) << 1) >> 16;
 
 
 yband[2]=yband[1];
@@ -154,11 +160,10 @@ yband[1]=yband[0];
 
 xband[2]=xband[1];
 xband[1]=xband[0];
-
 //
 // Saida
 //--------------------------------------------------------------------------------------------------------------------
-DataOutLeft = NCO ;       // loop left channel samples
+DataOutLeft = yband[0] ;       // loop left channel samples
 DataOutRight = DataInLeft;         // loop right channel samples
   }
 
