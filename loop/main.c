@@ -18,10 +18,10 @@ void main( void )
 
 
 {
-    Int16 r = 0,s, rmax, rmin,delta, delta0, deltamin, deltamax,gain = 32767,SDD,t,k = -27853,y2,inter,f,phase, alfa = 31523,//alfa = 0.996
+    Int16 r = 0,s, rmax, rmin,delta, delta0, deltamin, deltamax,gain = 32767,SDD,t,k = 27853,y2,inter,f,phase, alfa = 31523,//alfa = 0.996
     look_sen[33]= {0,3212,6393 ,9512 ,12539,15446,18204,20787,23170,25329,27245,28898,30273,31356,32137,32609,
     32767,32609,32137,31356,30273,28898,27245,25329,23170,20787,18204,15446,12539, 9512,6393,3212,0},
-    NCO, e, xband[3] = {0,0,0}, yband[3] = {0,0,0},Kf,ef,a1;
+    NCO, e,ec, xband[3] = {0,0,0}, yband[3] = {0,0,0},Kf,ef,a1,fd,dec = 0,yd;
     // Definicao do Delta = 4,096 * Fo
     delta0 = 16384;                             //Variavel Delta a ser incrementada
     deltamin = 8192;                            //4.096*2000
@@ -140,12 +140,27 @@ phase = ((((long)DataInLeft * NCO)<< 1)>>16);
 // Loop Filter
 //
 //---------------------------------------------------------
-e = (((long)alfa*e + (32767-alfa)*(long)phase)<<1)>>16;//dar fix
+e = ((((long)alfa*e + (32767-alfa)*(long)phase))<<1)>>16; //Resultado em Q15
+ec = ((((long)e*24932) <<1 ) << 1 ) >> 16;   //Valor de e corrigido e*1.76 (Q15)
+//------------------------------------------------------------
+//
+// Decimation
+//
+//---------------------------------------------------------
+//Filtro passa baixa IIR Fc=250, alpha = 0,91
+fd = ((((long)29839*fd + (32767-29839)*(long)ec))<<1)>>16; //Resultado em Q15
+dec++;
+//Salva o valor de fd a cada 32 amostras para realizar a decimacao
+if (dec == 32)
+    {
+        dec = 0 ;
+        yd = fd;
+    }
 
 //-------------------------------------------------------
 //      Frequency Control
 //-------------------------------------------------------
-Kf = (((-25736*(long)16384)) << 1 ) >> 16; //pi/2*ef resultado final em Q14
+Kf = (((-25736*(long)yd)) << 1 ) >> 16; //pi/2*ef resultado final em Q14
 
 //---------------------------------------------------------
 //      Band Pass Filter
@@ -164,7 +179,7 @@ xband[1]=xband[0];
 // Saida
 //--------------------------------------------------------------------------------------------------------------------
 DataOutLeft = yband[0] ;       // loop left channel samples
-DataOutRight = DataInLeft;         // loop right channel samples
+DataOutRight = NCO;         // loop right channel samples
   }
 
  } // main()
