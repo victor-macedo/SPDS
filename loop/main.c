@@ -18,7 +18,7 @@ void main( void )
 
 
 {
-    Int16 r = 0,s, rmax, rmin,delta, delta0, deltamin, deltamax,gain = 32767,SDD,t,k = 27853,y2,inter,f,phase, alfa = 31523,//alfa = 0.996
+    Int16 r = 0,s, rmax, rmin,delta, delta0, deltamin, deltamax,gain = 32767,SDD,t,k = 27853,y2,inter,f,phase, alfa = 31523,//fc = 100 -> alfa = 0.962
     look_sen[33]= {0,3212,6393 ,9512 ,12539,15446,18204,20787,23170,25329,27245,28898,30273,31356,32137,32609,
     32767,32609,32137,31356,30273,28898,27245,25329,23170,20787,18204,15446,12539, 9512,6393,3212,0},
     NCO, e,ec, xband[3] = {0,0,0}, yband[3] = {0,0,0},Kf,ef,a1,fd,dec = 0,yd;
@@ -149,9 +149,10 @@ ec = ((((long)e*24932) <<1 ) << 1 ) >> 16;   //Valor de e corrigido e*1.76 (Q15)
 //---------------------------------------------------------
 //Filtro passa baixa IIR Fc=250, alpha = 0,91
 fd = ((((long)29839*fd + (32767-29839)*(long)ec))<<1)>>16; //Resultado em Q15
+//fd = ((((long)29839*fd + (32767-29839)*(long)DataInLeft))<<1)>>16; //Resultado em Q15
 dec++;
 //Salva o valor de fd a cada 32 amostras para realizar a decimacao
-if (dec == 32)
+if (dec == 8132)
     {
         dec = 0 ;
         yd = fd;
