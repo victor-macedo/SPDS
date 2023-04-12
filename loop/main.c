@@ -21,7 +21,7 @@ void main( void )
     Int16 r = 0,s, rmax, rmin,delta, delta0, deltamin, deltamax,gain = 32767,SDD,t,k = 27853,y2,inter,f,phase, alfa = 31523,//fc = 100 -> alfa = 0.962
     look_sen[33]= {0,3212,6393 ,9512 ,12539,15446,18204,20787,23170,25329,27245,28898,30273,31356,32137,32609,
     32767,32609,32137,31356,30273,28898,27245,25329,23170,20787,18204,15446,12539, 9512,6393,3212,0},
-    NCO, e,ec, xband[3] = {0,0,0}, yband[3] = {0,0,0},Kf,ef,a1,fd,dec = 0,yd;
+    NCO, e,ec, xband[3] = {0,0,0}, yband[3] = {0,0,0},Kf,ef,a1,fd,dec = 0,yd,senkf,senkf2,Kf2,I_Kf;
     // Definicao do Delta = 4,096 * Fo
     delta0 = 16384;                             //Variavel Delta a ser incrementada
     deltamin = 8192;                            //4.096*2000
@@ -152,16 +152,28 @@ fd = ((((long)29839*fd + (32767-29839)*(long)ec))<<1)>>16; //Resultado em Q15
 //fd = ((((long)29839*fd + (32767-29839)*(long)DataInLeft))<<1)>>16; //Resultado em Q15
 dec++;
 //Salva o valor de fd a cada 32 amostras para realizar a decimacao
-if (dec == 8132)
+if (dec == 32)
     {
         dec = 0 ;
         yd = fd;
     }
 
+//yd=16384>>1;
 //-------------------------------------------------------
 //      Frequency Control
 //-------------------------------------------------------
-Kf = (((-25736*(long)yd)) << 1 ) >> 16; //pi/2*ef resultado final em Q14
+senkf = (((16384*(long)yd)) << 1 ) >> 16; //ef/2 resultado final em Q15
+senkf2 = (senkf & 31744) >> 10;           //0b1111 1100 0000 000  e Utiliza os 5 MSB + bit de sinal e converte para Q10
+
+
+Kf = (-look_sen[senkf2] >> 1);   //Converte o valor do sen de Q15 para Q14
+Kf2 = (-look_sen[senkf2+1] >> 1);
+if(senkf<0){
+    Kf = -Kf;
+}
+I_Kf = (senkf & 1023) << 5;           //0b0000 0011 1111 1111 Utiliza os outros bits da rampa para interpolacao
+inter = Kf+((((Kf2-Kf)*(long)I_Kf)<<1)>>16); //Interpolacao do seno
+//Kf = (((-25736*(long)yd)) << 1 ) >> 16; //pi/2*ef resultado final em Q14
 
 //---------------------------------------------------------
 //      Band Pass Filter
