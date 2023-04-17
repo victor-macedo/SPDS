@@ -1,1 +1,1 @@
-# SPDS
+Neste trabalho foi desenvolvido um filtro passa banda de rastreamento, o qual ajusta a frequência central para a frequência mais significativa da onda de entrada de forma automática. O projeto tem como objetivo aplicar os conceitos aprendidos durante as aula teóricas de ”Sistema de Processamento Digital de Sinais”.
